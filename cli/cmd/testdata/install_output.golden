@@ -1,24 +1,8 @@
-package cmd
-
-import (
-	"fmt"
-	"io"
-	"log"
-	"os"
-	"regexp"
-	"text/template"
-
-	"github.com/runconduit/conduit/pkg/k8s"
-	"github.com/runconduit/conduit/pkg/version"
-	uuid "github.com/satori/go.uuid"
-	"github.com/spf13/cobra"
-)
-
-var conduitTemplate = `### Namespace ###
+### Namespace ###
 kind: Namespace
 apiVersion: v1
 metadata:
-  name: {{.Namespace}}
+  name: Namespace
 
 ### Service Account Controller ###
 ---
@@ -26,7 +10,7 @@ kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: conduit-controller
-  namespace: {{.Namespace}}
+  namespace: Namespace
 
 ### RBAC ###
 ---
@@ -47,7 +31,7 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: conduit-controller
-  namespace: {{.Namespace}}
+  namespace: Namespace
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -55,7 +39,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: conduit-controller
-  namespace: {{.Namespace}}
+  namespace: Namespace
 
 ### Service Account Prometheus ###
 ---
@@ -63,7 +47,7 @@ kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: conduit-prometheus
-  namespace: {{.Namespace}}
+  namespace: Namespace
 
 ### RBAC ###
 ---
@@ -81,7 +65,7 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: conduit-prometheus
-  namespace: {{.Namespace}}
+  namespace: Namespace
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -89,7 +73,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: conduit-prometheus
-  namespace: {{.Namespace}}
+  namespace: Namespace
 
 ### Controller ###
 ---
@@ -97,12 +81,12 @@ kind: Service
 apiVersion: v1
 metadata:
   name: api
-  namespace: {{.Namespace}}
+  namespace: Namespace
   labels:
     app: controller
-    {{.ControllerComponentLabel}}: controller
+    ControllerComponentLabel: controller
   annotations:
-    {{.CreatedByAnnotation}}: {{.CliVersion}}
+    CreatedByAnnotation: CliVersion
 spec:
   type: ClusterIP
   selector:
@@ -117,12 +101,12 @@ kind: Service
 apiVersion: v1
 metadata:
   name: proxy-api
-  namespace: {{.Namespace}}
+  namespace: Namespace
   labels:
     app: controller
-    {{.ControllerComponentLabel}}: controller
+    ControllerComponentLabel: controller
   annotations:
-    {{.CreatedByAnnotation}}: {{.CliVersion}}
+    CreatedByAnnotation: CliVersion
 spec:
   type: ClusterIP
   selector:
@@ -137,21 +121,21 @@ kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
   name: controller
-  namespace: {{.Namespace}}
+  namespace: Namespace
   labels:
     app: controller
-    {{.ControllerComponentLabel}}: controller
+    ControllerComponentLabel: controller
   annotations:
-    {{.CreatedByAnnotation}}: {{.CliVersion}}
+    CreatedByAnnotation: CliVersion
 spec:
-  replicas: {{.ControllerReplicas}}
+  replicas: 1
   template:
     metadata:
       labels:
         app: controller
-        {{.ControllerComponentLabel}}: controller
+        ControllerComponentLabel: controller
       annotations:
-        {{.CreatedByAnnotation}}: {{.CliVersion}}
+        CreatedByAnnotation: CliVersion
     spec:
       serviceAccount: conduit-controller
       containers:
@@ -161,8 +145,8 @@ spec:
           containerPort: 8085
         - name: admin-http
           containerPort: 9995
-        image: {{.ControllerImage}}
-        imagePullPolicy: {{.ImagePullPolicy}}
+        image: ControllerImage
+        imagePullPolicy: ImagePullPolicy
         args:
         - "public-api"
         - "-addr=:8085"
@@ -175,8 +159,8 @@ spec:
           containerPort: 8089
         - name: admin-http
           containerPort: 9999
-        image: {{.ControllerImage}}
-        imagePullPolicy: {{.ImagePullPolicy}}
+        image: ControllerImage
+        imagePullPolicy: ImagePullPolicy
         args:
         - "destination"
         - "-addr=:8089"
@@ -187,8 +171,8 @@ spec:
           containerPort: 8086
         - name: admin-http
           containerPort: 9996
-        image: {{.ControllerImage}}
-        imagePullPolicy: {{.ImagePullPolicy}}
+        image: ControllerImage
+        imagePullPolicy: ImagePullPolicy
         args:
         - "proxy-api"
         - "-addr=:8086"
@@ -201,8 +185,8 @@ spec:
           containerPort: 8088
         - name: admin-http
           containerPort: 9998
-        image: {{.ControllerImage}}
-        imagePullPolicy: {{.ImagePullPolicy}}
+        image: ControllerImage
+        imagePullPolicy: ImagePullPolicy
         args:
         - "tap"
         - "-addr=:8088"
@@ -213,8 +197,8 @@ spec:
           containerPort: 8087
         - name: admin-http
           containerPort: 9997
-        image: {{.ControllerImage}}
-        imagePullPolicy: {{.ImagePullPolicy}}
+        image: ControllerImage
+        imagePullPolicy: ImagePullPolicy
         args:
         - "telemetry"
         - "-addr=:8087"
@@ -228,12 +212,12 @@ kind: Service
 apiVersion: v1
 metadata:
   name: web
-  namespace: {{.Namespace}}
+  namespace: Namespace
   labels:
     app: web
-    {{.ControllerComponentLabel}}: web
+    ControllerComponentLabel: web
   annotations:
-    {{.CreatedByAnnotation}}: {{.CliVersion}}
+    CreatedByAnnotation: CliVersion
 spec:
   type: ClusterIP
   selector:
@@ -251,21 +235,21 @@ kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
   name: web
-  namespace: {{.Namespace}}
+  namespace: Namespace
   labels:
     app: web
-    {{.ControllerComponentLabel}}: web
+    ControllerComponentLabel: web
   annotations:
-    {{.CreatedByAnnotation}}: {{.CliVersion}}
+    CreatedByAnnotation: CliVersion
 spec:
-  replicas: {{.WebReplicas}}
+  replicas: 2
   template:
     metadata:
       labels:
         app: web
-        {{.ControllerComponentLabel}}: web
+        ControllerComponentLabel: web
       annotations:
-        {{.CreatedByAnnotation}}: {{.CliVersion}}
+        CreatedByAnnotation: CliVersion
     spec:
       containers:
       - name: web
@@ -274,15 +258,15 @@ spec:
           containerPort: 8084
         - name: admin-http
           containerPort: 9994
-        image: {{.WebImage}}
-        imagePullPolicy: {{.ImagePullPolicy}}
+        image: WebImage
+        imagePullPolicy: ImagePullPolicy
         args:
         - "-addr=:8084"
         - "-metrics-addr=:9994"
         - "-api-addr=api:8085"
         - "-static-dir=/dist"
         - "-template-dir=/templates"
-        - "-uuid={{.UUID}}"
+        - "-uuid=UUID"
 
 ### Prometheus ###
 ---
@@ -290,12 +274,12 @@ kind: Service
 apiVersion: v1
 metadata:
   name: prometheus
-  namespace: {{.Namespace}}
+  namespace: Namespace
   labels:
     app: prometheus
-    {{.ControllerComponentLabel}}: prometheus
+    ControllerComponentLabel: prometheus
   annotations:
-    {{.CreatedByAnnotation}}: {{.CliVersion}}
+    CreatedByAnnotation: CliVersion
 spec:
   type: ClusterIP
   selector:
@@ -310,21 +294,21 @@ kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
   name: prometheus
-  namespace: {{.Namespace}}
+  namespace: Namespace
   labels:
     app: prometheus
-    {{.ControllerComponentLabel}}: prometheus
+    ControllerComponentLabel: prometheus
   annotations:
-    {{.CreatedByAnnotation}}: {{.CliVersion}}
+    CreatedByAnnotation: CliVersion
 spec:
-  replicas: {{.PrometheusReplicas}}
+  replicas: 3
   template:
     metadata:
       labels:
         app: prometheus
-        {{.ControllerComponentLabel}}: prometheus
+        ControllerComponentLabel: prometheus
       annotations:
-        {{.CreatedByAnnotation}}: {{.CliVersion}}
+        CreatedByAnnotation: CliVersion
     spec:
       serviceAccount: conduit-prometheus
       volumes:
@@ -340,8 +324,8 @@ spec:
         - name: prometheus-config
           mountPath: /etc/prometheus
           readOnly: true
-        image: {{.PrometheusImage}}
-        imagePullPolicy: {{.ImagePullPolicy}}
+        image: PrometheusImage
+        imagePullPolicy: ImagePullPolicy
         args:
         - "-storage.local.retention=6h"
         - "-storage.local.memory-chunks=500000"
@@ -357,12 +341,12 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: prometheus-config
-  namespace: {{.Namespace}}
+  namespace: Namespace
   labels:
     app: prometheus
-    {{.ControllerComponentLabel}}: prometheus
+    ControllerComponentLabel: prometheus
   annotations:
-    {{.CreatedByAnnotation}}: {{.CliVersion}}
+    CreatedByAnnotation: CliVersion
 data:
   prometheus.yml: |-
     global:
@@ -378,7 +362,7 @@ data:
       kubernetes_sd_configs:
       - role: pod
         namespaces:
-          names: ['{{.Namespace}}']
+          names: ['Namespace']
       relabel_configs:
       - source_labels: [__meta_kubernetes_pod_container_port_name]
         action: keep
@@ -386,94 +370,3 @@ data:
       - source_labels: [__meta_kubernetes_pod_container_name]
         action: replace
         target_label: job
-`
-
-type installConfig struct {
-	Namespace                string
-	ControllerImage          string
-	WebImage                 string
-	PrometheusImage          string
-	ControllerReplicas       uint
-	WebReplicas              uint
-	PrometheusReplicas       uint
-	ImagePullPolicy          string
-	UUID                     string
-	CliVersion               string
-	ControllerComponentLabel string
-	CreatedByAnnotation      string
-}
-
-var (
-	conduitVersion     string
-	dockerRegistry     string
-	controllerReplicas uint
-	webReplicas        uint
-	prometheusReplicas uint
-	imagePullPolicy    string
-)
-
-var installCmd = &cobra.Command{
-	Use:   "install [flags]",
-	Short: "Output Kubernetes configs to install Conduit",
-	Long:  "Output Kubernetes configs to install Conduit.",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := validate(); err != nil {
-			log.Fatal(err.Error())
-		}
-		config := installConfig{
-			Namespace:                controlPlaneNamespace,
-			ControllerImage:          fmt.Sprintf("%s/controller:%s", dockerRegistry, conduitVersion),
-			WebImage:                 fmt.Sprintf("%s/web:%s", dockerRegistry, conduitVersion),
-			PrometheusImage:          "prom/prometheus:v1.8.1",
-			ControllerReplicas:       controllerReplicas,
-			WebReplicas:              webReplicas,
-			PrometheusReplicas:       prometheusReplicas,
-			ImagePullPolicy:          imagePullPolicy,
-			UUID:                     uuid.NewV4().String(),
-			CliVersion:               k8s.CreatedByAnnotationValue(),
-			ControllerComponentLabel: k8s.ControllerComponentLabel,
-			CreatedByAnnotation:      k8s.CreatedByAnnotation,
-		}
-		return render(config, os.Stdout)
-	},
-}
-
-func render(config installConfig, w io.Writer) error {
-	template, err := template.New("conduit").Parse(conduitTemplate)
-	if err != nil {
-		return err
-	}
-	return template.Execute(w, config)
-}
-
-var alphaNumDash = regexp.MustCompile("^[a-zA-Z0-9-]+$")
-var alphaNumDashDot = regexp.MustCompile("^[\\.a-zA-Z0-9-]+$")
-var alphaNumDashDotSlash = regexp.MustCompile("^[\\./a-zA-Z0-9-]+$")
-
-func validate() error {
-	// These regexs are not as strict as they could be, but are a quick and dirty
-	// sanity check against illegal characters.
-	if !alphaNumDash.MatchString(controlPlaneNamespace) {
-		return fmt.Errorf("%s is not a valid namespace", controlPlaneNamespace)
-	}
-	if !alphaNumDashDot.MatchString(conduitVersion) {
-		return fmt.Errorf("%s is not a valid version", conduitVersion)
-	}
-	if !alphaNumDashDotSlash.MatchString(dockerRegistry) {
-		return fmt.Errorf("%s is not a valid Docker registry", dockerRegistry)
-	}
-	if imagePullPolicy != "Always" && imagePullPolicy != "IfNotPresent" && imagePullPolicy != "Never" {
-		return fmt.Errorf("imagePullPolicy must be one of Always, IfNotPresent, or Never")
-	}
-	return nil
-}
-
-func init() {
-	RootCmd.AddCommand(installCmd)
-	installCmd.PersistentFlags().StringVarP(&conduitVersion, "version", "v", version.Version, "Conduit version to install")
-	installCmd.PersistentFlags().StringVarP(&dockerRegistry, "registry", "r", "gcr.io/runconduit", "Docker registry to pull images from")
-	installCmd.PersistentFlags().UintVar(&controllerReplicas, "controller-replicas", 1, "replicas of the controller to deploy")
-	installCmd.PersistentFlags().UintVar(&webReplicas, "web-replicas", 1, "replicas of the web server to deploy")
-	installCmd.PersistentFlags().UintVar(&prometheusReplicas, "prometheus-replicas", 1, "replicas of prometheus to deploy")
-	installCmd.PersistentFlags().StringVar(&imagePullPolicy, "image-pull-policy", "IfNotPresent", "Docker image pull policy")
-}
