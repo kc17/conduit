@@ -18,11 +18,11 @@ const (
 
 	// ControllerComponentLabel identifies this object as a component of Conduit's
 	// control plane (e.g. web, controller).
-	ControllerComponentLabel = "conduit.io/controller-component"
+	ControllerComponentLabel = "conduit.io/control-plane-component"
 
 	// ControllerNSLabel is injected into mesh-enabled apps, identifying the
 	// namespace of the Conduit control plane.
-	ControllerNSLabel = "conduit.io/controller-ns"
+	ControllerNSLabel = "conduit.io/control-plane-ns"
 
 	/*
 	 * Annotations
