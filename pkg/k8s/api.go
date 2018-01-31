@@ -109,16 +109,29 @@ func (kubeapi *kubernetesApi) checkApiAccess(client *http.Client) *healthcheckPb
 	return checkResult
 }
 
+// TODO: comment
 func (kubeapi *kubernetesApi) UrlFor(namespace string, extraPathStartingWithSlash string) (*url.URL, error) {
 	return generateKubernetesApiBaseUrlFor(kubeapi.Host, namespace, extraPathStartingWithSlash)
 }
 
-func NewK8sAPI(shell shell.Shell, k8sConfigFilesystemPathOverride string) (KubernetesApi, error) {
+// TODO: comment
+func NewK8sRestConfig(k8sConfigFilesystemPathOverride string, homedir string) (*rest.Config, error) {
 	kubeconfigEnvVar := os.Getenv(kubernetesConfigFilePathEnvVariable)
 
-	config, err := parseK8SConfig(findK8sConfigFile(k8sConfigFilesystemPathOverride, kubeconfigEnvVar, shell.HomeDir()))
+	config, err := parseK8SConfig(findK8sConfigFile(k8sConfigFilesystemPathOverride, kubeconfigEnvVar, homedir))
 	if err != nil {
 		return nil, fmt.Errorf("error configuring Kubernetes API client: %v", err)
 	}
+
+	return config, nil
+}
+
+// TODO: comment
+func NewK8sAPI(shell shell.Shell, k8sConfigFilesystemPathOverride string) (KubernetesApi, error) {
+	config, err := NewK8sRestConfig(k8sConfigFilesystemPathOverride, shell.HomeDir())
+	if err != nil {
+		return nil, fmt.Errorf("NewK8sRestConfig() failed: %v", err)
+	}
+
 	return &kubernetesApi{Config: config}, nil
 }

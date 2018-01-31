@@ -181,17 +181,21 @@ func NewServer(addr, prometheusUrl string, ignoredNamespaces []string, kubeconfi
 }
 
 func (s *server) Query(ctx context.Context, req *read.QueryRequest) (*read.QueryResponse, error) {
+	log.Debugf("Serving Query: %+v", req)
+
 	start := time.Unix(0, req.StartMs*int64(time.Millisecond))
 	end := time.Unix(0, req.EndMs*int64(time.Millisecond))
 
 	step, err := time.ParseDuration(req.Step)
 	if err != nil {
+		log.Errorf("ParseDuration(%+v) failed with: %+v", req.Step, err)
 		return nil, err
 	}
 
 	queryRange := v1.Range{Start: start, End: end, Step: step}
 	res, err := s.prometheusApi.QueryRange(ctx, req.Query, queryRange)
 	if err != nil {
+		log.Errorf("QueryRange(%+v, %+v) failed with: %+v", req.Query, queryRange, err)
 		return nil, err
 	}
 
@@ -208,6 +212,7 @@ func (s *server) Query(ctx context.Context, req *read.QueryRequest) (*read.Query
 }
 
 func (s *server) ListPods(ctx context.Context, req *read.ListPodsRequest) (*public.ListPodsResponse, error) {
+	log.Debugf("Serving ListPods: %+v", req)
 
 	pods, err := s.pods.List()
 	if err != nil {
@@ -222,7 +227,7 @@ func (s *server) ListPods(ctx context.Context, req *read.ListPodsRequest) (*publ
 		}
 		deployment, err := s.replicaSets.GetDeploymentForPod(pod)
 		if err != nil {
-			log.Debugf("Cannot get deployment for pod %s: %s", pod.Name, err)
+			log.Errorf("Cannot get deployment for pod %s: %s", pod.Name, err)
 			deployment = ""
 		}
 		name := pod.Namespace + "/" + pod.Name
@@ -259,6 +264,8 @@ func (s *server) ListPods(ctx context.Context, req *read.ListPodsRequest) (*publ
 }
 
 func (s *server) Report(ctx context.Context, req *write.ReportRequest) (*write.ReportResponse, error) {
+	log.Debugf("Serving Report: %+v", req)
+
 	id := "unknown"
 	if req.Process != nil {
 		id = req.Process.ScheduledNamespace + "/" + req.Process.ScheduledInstance
@@ -329,22 +336,22 @@ func (s *server) getNameAndDeployment(ip *common.IPAddress) (string, string) {
 	ipStr := util.IPToString(ip)
 	pods, err := s.pods.GetPodsByIndex(ipStr)
 	if err != nil {
-		log.Debugf("Cannot get pod for IP %s: %s", ipStr, err)
+		log.Errorf("Cannot get pod for IP %s: %s", ipStr, err)
 		return "", ""
 	}
 	if len(pods) == 0 {
-		log.Debugf("No pod exists for IP %s", ipStr)
+		log.Errorf("No pod exists for IP %s", ipStr)
 		return "", ""
 	}
 	if len(pods) > 1 {
-		log.Debugf("Multiple pods found for IP %s", ipStr)
+		log.Errorf("Multiple pods found for IP %s", ipStr)
 		return "", ""
 	}
 	pod := pods[0]
 	name := pod.Namespace + "/" + pod.Name
 	deployment, err := (*s.replicaSets).GetDeploymentForPod(pod)
 	if err != nil {
-		log.Debugf("Cannot get deployment for pod %s: %s", pod.Name, err)
+		log.Errorf("Cannot get deployment for pod %s: %s", pod.Name, err)
 		return name, ""
 	}
 	return name, deployment
